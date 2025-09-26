@@ -1,0 +1,30 @@
+{
+  "name": "px-snap",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "dev": "vite"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/djdeleon/px-snap.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "module",
+  "bugs": {
+    "url": "https://github.com/djdeleon/px-snap/issues"
+  },
+  "homepage": "https://github.com/djdeleon/px-snap#readme",
+  "devDependencies": {
+    "daisyui": "^5.1.23",
+    "vite": "^7.1.7"
+  },
+  "dependencies": {
+    "@tailwindcss/vite": "^4.1.13",
+    "tailwindcss": "^4.1.13"
+  }
+}
