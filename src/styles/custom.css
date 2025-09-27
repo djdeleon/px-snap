@@ -1,0 +1,26 @@
+.dock {
+    > * {
+        gap: 4px;
+    }
+}
+
+.dock {
+  & > * {
+    &:after {
+      height: calc(0.1rem * 1);
+      margin-top: 10px;
+    }
+  }
+}
+
+.dock-lg {
+    & .dock-active {
+        &:after {
+            bottom: 0;
+        }
+    }
+}
+
+#preview {
+  
+}
