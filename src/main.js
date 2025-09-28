@@ -351,7 +351,6 @@ function calculateTypography() {
 }
 
 function createScales() {
-  console.log(getGrid, getTypeScale, getBaseFont, getRatio, getRootFont)
   const typography = calculateTypography()
 
   document.getElementById('scales')?.remove()
