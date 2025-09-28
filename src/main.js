@@ -9,101 +9,316 @@ const horizontal = document.getElementById('horizontal')
 const vertical = document.getElementById('vertical')
 const switchMode = document.getElementById('switchMode')
 const switchText = document.getElementById('switchText')
+const grid = document.getElementById('grid')
+const typeScales = document.getElementById('typeScales')
+const cssGenerators = document.getElementById('cssGenerators')
 
-const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-switchText.textContent = prefersDark ? 'Dark' : 'Light'
+let getGrid = 8
+let getGridLabel = '8pt Grid System + 4pt Baseline'
+let getTypeScale = 'combine'
+let getBaseFont = 16
+let getRatio = 1.067
+let getRootFont = 16
 
-switchMode.addEventListener('click', e => {
-  const input = e.target.closest('input') 
-
-  if (input) {
-
-    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-    const systemTheme = prefersDark ? 'Dark' : 'Light'
-
-    if (systemTheme === 'dark' & !document.querySelector(':root').hasAttribute('data-theme')) {
-      document.documentElement.setAttribute('data-theme', 'light')
-    } else {
-      if (document.documentElement.getAttribute('data-theme') === 'light') {
-        switchText.textContent = 'Dark'
-        document.documentElement.setAttribute('data-theme', 'dark')
-      } else {
-        switchText.textContent = 'Light'
-        document.documentElement.setAttribute('data-theme', 'light')
-      }
-    }
-  }
-})
-
-function createGridGuidelines(spacings) {
-    preview.style.cssText = `
-        position: relative;
-        width: 100vw;
-        height: 100vh;
-        border-radius: 8px;
-        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-        overflow: hidden;
-    `;
-
-    let currentX = 20;
-    const verticalSection = document.createElement('div')
-    verticalSection.setAttribute('id', 'verticals')
-    spacings.forEach((spacing, index) => {
-        const verticalLine = document.createElement('div');
-        verticalLine.style.cssText = `
-            position: absolute;
-            left: ${currentX}px;
-            top: 0;
-            width: 1px;
-            height: 100%;
-            background-color: #ccc;
-            z-index: 1;
-        `;
-        verticalSection.appendChild(verticalLine);
-        currentX += spacing;
-    });
-    preview.appendChild(verticalSection)
-
-    const horizontalSection = document.createElement('div')
-    horizontalSection.setAttribute('id', 'horizontals')
-    let currentY = 20;
-    spacings.forEach((spacing, index) => {
-        const horizontalLine = document.createElement('div');
-        horizontalLine.style.cssText = `
-            position: absolute;
-            left: 0;
-            top: ${currentY}px;
-            width: 100%;
-            height: 1px;
-            background-color: #ccc;
-            z-index: 1;
-        `;
-        horizontalSection.appendChild(horizontalLine);
-        currentY += spacing;
-    });
-    preview.appendChild(horizontalSection)
+function getRatioLabel() {
+  return contrastRatio.querySelector('.btn-active').textContent.trim()
 }
 
-const spacings = Array.from({ length: 20 }, (_, i) => (i + 1) * 8);
-createGridGuidelines(spacings);
+cssGenerators.addEventListener('click', (e) => {
+  const button = e.target.closest('button')
 
-function createScales(
-    gridSystem = 8,
-    typeScale = 'combine',
-    baseFont = 16,
-    ratio = 1.067,
-    rootFont = 16
-) {
-  const scales = document.createElement('div')
-  scales.setAttribute('id', 'scales')
-  scales.setAttribute('class', 'relative z-1')
+  if (!button) return;
 
-  // Typography
-  // Font Size
+  const type = button.textContent.trim()
+
+  copyToken(generateExportFormats(type), button)
+})
+
+function scssToken() {
+  // SCSS TOKENS
+  let scssOutput = `/* PX Snap Design Tokens - Generated ${new Date().toLocaleString()} */\n`;
+  scssOutput += `/* Base: ${getBaseFont}px | Ratio: ${getRatioLabel()} | Grid: ${getGridLabel} */\n\n`;
+
+  // SCSS Variables Section
+  scssOutput += `// Design Tokens Variables\n`;
+
+  // Breakpoints
+  const breakpoints = [
+    {
+      label: 'sm',
+      size: '320px'
+    },
+    {
+      label: 'md',
+      size: '672px'
+    },
+    {
+      label: 'lg',
+      size: '1056px'
+    },
+    {
+      label: 'xl',
+      size: '1312px'
+    },
+    {
+      label: '2xl',
+      size: '1584px'
+    },
+  ];
+
+  scssOutput += `\n// Breakpoints\n`;
+  breakpoints.forEach(breakpoint => {
+    scssOutput += `$bp-${breakpoint.label}: ${breakpoint.size};\n`;
+  });
+
+  // Spacing
+  scssOutput += `\n// Spacing\n`;
+  const spacings = Array.from({ length: 10 }, (_, i) => (i + 1) * getGrid);
+  const spacingLabels = ['xs', 'sm', 'md', 'lg', 'xl', '2xl', '3xl', '4xl', '5xl', '6xl', '7xl', '8xl'];
+  spacings.forEach((v, i) => {
+    scssOutput += `$space-${spacingLabels[i]}: ${v}px;\n`;
+  });
+
+  // Typography SCSS
+  const typography = calculateTypography();
+  scssOutput += `\n// Typography\n`;
+  scssOutput += `// Font Sizes\n`;
+  typography.forEach(v => {
+    scssOutput += `$fs-${v.label}: ${v.size};\n`;
+  });
+  scssOutput += `\n// Line Heights\n`;
+  typography.forEach(v => {
+    scssOutput += `$lh-${v.label}: ${v.lineHeight};\n`;
+  });
+
+  // SCSS Maps for easier iteration
+  scssOutput += `\n// SCSS Maps\n`;
+  scssOutput += `$breakpoints: (\n`;
+  breakpoints.forEach((breakpoint, index) => {
+    const comma = index < breakpoints.length - 1 ? ',' : '';
+    scssOutput += `  ${breakpoint.label}: ${breakpoint.size}${comma}\n`;
+  });
+  scssOutput += `);\n\n`;
+
+  scssOutput += `$spacings: (\n`;
+  spacings.forEach((v, i) => {
+    const comma = i < spacings.length - 1 ? ',' : '';
+    scssOutput += `  ${spacingLabels[i]}: ${v}px${comma}\n`;
+  });
+  scssOutput += `);\n\n`;
+
+  scssOutput += `$font-sizes: (\n`;
+  typography.forEach((v, index) => {
+    const comma = index < typography.length - 1 ? ',' : '';
+    scssOutput += `  ${v.label}: ${v.size}${comma}\n`;
+  });
+  scssOutput += `);\n\n`;
+
+  scssOutput += `$line-heights: (\n`;
+  typography.forEach((v, index) => {
+    const comma = index < typography.length - 1 ? ',' : '';
+    scssOutput += `  ${v.label}: ${v.lineHeight}${comma}\n`;
+  });
+  scssOutput += `);\n\n`;
+
+  // CSS Custom Properties (for CSS compatibility)
+  scssOutput += `:root {\n`;
+  scssOutput += `  // Breakpoints\n`;
+  breakpoints.forEach(breakpoint => {
+    scssOutput += `  --bp-${breakpoint.label}: #{$bp-${breakpoint.label}};\n`;
+  });
+
+  scssOutput += `\n  // Spacing\n`;
+  spacings.forEach((v, i) => {
+    scssOutput += `  --space-${spacingLabels[i]}: #{$space-${spacingLabels[i]}};\n`;
+  });
+
+  scssOutput += `\n  // Typography\n`;
+  typography.forEach(v => {
+    scssOutput += `  --fs-${v.label}: #{$fs-${v.label}};\n`;
+  });
+  scssOutput += `\n`;
+  typography.forEach(v => {
+    scssOutput += `  --lh-${v.label}: #{$lh-${v.label}};\n`;
+  });
+  scssOutput += `}\n\n`;
+
+  // Mixins
+  scssOutput += `// Mixins\n`;
+  scssOutput += `@mixin breakpoint($size) {\n`;
+  scssOutput += `  @if map-has-key($breakpoints, $size) {\n`;
+  scssOutput += `    @media (min-width: map-get($breakpoints, $size)) {\n`;
+  scssOutput += `      @content;\n`;
+  scssOutput += `    }\n`;
+  scssOutput += `  } @else {\n`;
+  scssOutput += `    @warn "Breakpoint #{$size} not found in $breakpoints map";\n`;
+  scssOutput += `  }\n`;
+  scssOutput += `}\n\n`;
+
+  scssOutput += `@mixin text-style($size) {\n`;
+  scssOutput += `  @if map-has-key($font-sizes, $size) and map-has-key($line-heights, $size) {\n`;
+  scssOutput += `    font-size: map-get($font-sizes, $size);\n`;
+  scssOutput += `    line-height: map-get($line-heights, $size);\n`;
+  scssOutput += `  } @else {\n`;
+  scssOutput += `    @warn "Text style #{$size} not found";\n`;
+  scssOutput += `  }\n`;
+  scssOutput += `}\n\n`;
+
+  // Utility Classes
+  scssOutput += `// Typography Utilities\n`;
+  typography.forEach(v => {
+    scssOutput += `.text-${v.label} {\n`;
+    scssOutput += `  @include text-style(${v.label});\n`;
+    scssOutput += `}\n\n`;
+  });
+
+  scssOutput += `// Spacing Utilities\n`;
+  scssOutput += `// Margin\n`;
+  spacings.forEach((v, i) => {
+    scssOutput += `.m-${i+1} {\n`;
+    scssOutput += `  margin: $space-${spacingLabels[i]};\n`;
+    scssOutput += `}\n\n`;
+  });
+
+  scssOutput += `// Padding\n`;
+  spacings.forEach((v, i) => {
+    scssOutput += `.p-${i+1} {\n`;
+    scssOutput += `  padding: $space-${spacingLabels[i]};\n`;
+    scssOutput += `}\n\n`;
+  });
+
+  scssOutput += `// Gap\n`;
+  spacings.forEach((v, i) => {
+    scssOutput += `.gap-${i+1} {\n`;
+    scssOutput += `  gap: $space-${spacingLabels[i]};\n`;
+    scssOutput += `}\n\n`;
+  });
+
+  return scssOutput;
+}
+
+function cssToken() {
+  // CSS TOKENS
+  let cssOutput = `/* PX Snap Design Tokens - Generated ${new Date().toLocaleString()} */\n`;
+  cssOutput += `/* Base: ${getBaseFont}px | Ratio: ${getRatioLabel()} | Grid: ${getGridLabel} */\n\n`;
+  cssOutput += `:root {\n`;
+
+  // Breakpoints
+  const breakpoints = [
+    {
+      label: 'sm',
+      size: '320px'
+    },
+    {
+      label: 'md',
+      size: '672px'
+    },
+    {
+      label: 'lg',
+      size: '1056px'
+    },
+    {
+      label: 'xl',
+      size: '1312px'
+    },
+    {
+      label: '2xl',
+      size: '1584px'
+    },
+  ]
+
+  cssOutput += `  /* Breakpoints */\n`;
+  let breakpointSizeTokens = `  /* Viewports */\n`
+  let breakpointQueryTokens = `\n  /* Media Queries */\n`
+  breakpoints.forEach(breakpoint => {
+    breakpointSizeTokens += `  --bp-${breakpoint.label}: ${breakpoint.size}\n`
+    breakpointQueryTokens += `  @media (min-width: ${breakpoint.size}) {}\n`
+  })
+
+  cssOutput += breakpointSizeTokens
+  cssOutput += breakpointQueryTokens
+  
+  // Spacing
+  cssOutput += `\n  /* Spacing */\n`;
+  const spacings = Array.from({ length: 10 }, (_, i) => (i + 1) * getGrid)
+  const spacingLabels = ['xs', 'sm', 'md', 'lg', 'xl', '2xl', '3xl', '4xl', '5xl', '6xl', '7xl', '8xl'];
+
+  let spacingTokens = ''
+  spacings.forEach((v, i) => spacingTokens += `  --space-${spacingLabels[i]}: ${v}px\n`)
+  cssOutput += spacingTokens
+  
+  // Typography CSS
+  const typography = calculateTypography()
+  let typeFontSize = `  /* Font SIze */\n`
+  let typeLineHeight = `\n  /* Line Height */\n`
+
+  cssOutput += `\n  /* Typography */\n`;
+  typography.forEach(v => {
+    typeFontSize += `  --fs-${v.label}: ${v.size};\n`;
+    typeLineHeight += `  --lh-${v.label}: ${v.lineHeight};\n`;
+  });
+  cssOutput += typeFontSize
+  cssOutput += typeLineHeight
+  
+  // Utility Classes
+  cssOutput += `\n  /* Typography Utilities */\n`;
+  typography.forEach(v => {
+    cssOutput += `  .text-${v.label} { font-size: var(--fs-${v.label}); line-height: var(--lh-${v.label}); }\n`;
+  });
+
+  cssOutput += `\n  /* Spacing Utilities */\n`;
+  let spacingMargins = `  /* Margin */\n`
+  let spacingPaddings = `\n  /* Padding */\n`
+  let spacingGaps = `\n  /* Gap */\n`
+  spacings.forEach((v, i) => {
+    spacingMargins += `  .m-${i+1} { margin: var(--space-${spacingLabels[i]}); }\n`;
+    spacingPaddings += `  .p-${i+1} { padding: var(--space-${spacingLabels[i]}); }\n`;
+    spacingGaps += `  .gap-${i+1} { gap: var(--space-${spacingLabels[i]}); }\n`;
+  });
+
+  cssOutput += spacingMargins
+  cssOutput += spacingPaddings
+  cssOutput += spacingGaps
+
+  cssOutput += `}\n\n`;
+
+  return cssOutput
+}
+
+function generateExportFormats(type) {
+  switch (type) {
+    case 'CSS':
+      return cssToken()
+    case 'SCSS':
+      return scssToken()
+  }
+}
+
+async function copyToken(tokens, element) {
+  try {
+    await navigator.clipboard.writeText(tokens)
+
+    const svg = element.firstElementChild
+    svg.classList.add('hidden')
+    const checkIcon = element.querySelector('.checkIcon')
+    checkIcon.classList.remove('hidden')
+
+    setTimeout(() => {
+      svg.classList.remove('hidden')
+      checkIcon.classList.add('hidden')
+    }, 1000)
+  } catch (err) {
+    alert('Copying failed, try again later.')
+  }
+}
+
+function calculateTypography() {
+  const fontSizes  = []
+
   const typography = {
     xs: -1, sm: 0, md: 1, lg: 2, xl: 3, '2xl': 4, '3xl': 5, '4xl': 6, '5xl': 7, '6xl': 8
   };
-  const dummyText = 'David Jayson Cosilet De Leon'
+
   // Line Height
   const types = {
     'combine': true,
@@ -112,15 +327,7 @@ function createScales(
   }
 
   for (const [label, step] of Object.entries(typography)) {
-    const px = baseFont * Math.pow(ratio, step)
-    const rem = px / rootFont // TODO: Need to convert into rem. function
-
-    const div = document.createElement('div')
-    div.textContent = dummyText
-    console.log(rem)
-    div.style.fontSize = `${rem.toFixed(3)}rem`
-    div.classList.add('whitespace-nowrap')
-    scales.appendChild(div)
+    const px = getBaseFont * Math.pow(getRatio, step)
 
     // Calculate optimal line height
     let lhMultiplier;
@@ -133,93 +340,60 @@ function createScales(
     const snappedLineHeightPx = Math.round(idealLineHeightPx / 4) * 4;
     const finalLineHeightRatio = snappedLineHeightPx / px;
 
-    // if (types[typeScale]) {
-    //   root.style.setProperty(`--lh-${label}`, `${finalLineHeightRatio}`)
-    // } else {
-    //   root.style.removeProperty(`--lh-${label}`)
-    // }
+    fontSizes.push({
+        label: label,
+        size: `${toRem(px).toFixed(3)}rem`,
+        lineHeight: types[getTypeScale] ? finalLineHeightRatio.toFixed(3) : `${idealLineHeightPx.toFixed()}px`
+    })
   }
 
+  return fontSizes
+}
+
+function createScales() {
+  console.log(getGrid, getTypeScale, getBaseFont, getRatio, getRootFont)
+  const typography = calculateTypography()
+
+  document.getElementById('scales')?.remove()
+
+  const scales = document.createElement('div')
+  scales.setAttribute('id', 'scales')
+  scales.setAttribute('class', 'relative z-1 h-screen p-5')
+
+  typography.forEach(v => {
+    const div = document.createElement('div')
+    div.textContent = 'The quick brown fox jumps over the lazy dog'
+    div.style.fontSize = `${v.size}`
+    div.classList.add('whitespace-nowrap')
+    div.classList.add('mb-10')
+    scales.appendChild(div)
+  })
   
   preview.appendChild(scales)
 }
-
 createScales()
 
-
-
-horizontal.addEventListener('input', (e) => {
-  const checkbox = e.target.closest('input[type=checkbox]')
-
-  if (checkbox) {
-    const horizontals = document.getElementById('horizontals')
-
-    if (checkbox.checked) {
-      horizontals.style.display = 'block'
-    } else {
-      horizontals.style.display = 'none'
-    }
-  }
-})
-
-vertical.addEventListener('input', (e) => {
-  const checkbox = e.target.closest('input[type=checkbox]')
-
-  if (checkbox) {
-    const verticals = document.getElementById('verticals')
-
-    if (checkbox.checked) {
-      verticals.style.display = 'block'
-    } else {
-      verticals.style.display = 'none'
-    }
-  }
-})
-
-const mediaQuery = window.matchMedia('(min-width: 640px)');
-
-function handleMediaQueryChange(e) {
-  if (e.matches) {
-    panel.removeAttribute('style')
-    calculator.classList.remove('hidden')
-    nav.classList.remove('hidden')
-    calculator.classList.add('h-screen')
-  } else {
-    panel.style.height = `${getPanelHeight()}vh`
-  }
+function toRem(px) {
+  return px / getRootFont
 }
 
-handleMediaQueryChange(mediaQuery);
-mediaQuery.addEventListener('change', handleMediaQueryChange);
+grid.addEventListener('click', (e) => {
+  const input = e.target.closest('input')
+  if (!input) return;
 
-contrastRatio.addEventListener('click', e => {
-  const button = e.target.closest('button')
+  getGrid = input.value
+  getGridLabel = input.dataset.grid
 
-  if (button) {
-    // change active state
-    const buttons = contrastRatio.querySelectorAll('button')
-    buttons.forEach(b => b.classList.remove('btn-active'))
-    button.classList.add('btn-active')
+  createScales()
+})
 
-    // getGrid
-    const gridValue = '8pt'
+typeScales.addEventListener('click', e => {
+  const input = e.target.closest('input')
+  if (!input) return;
 
-    // getTypeScale
-    let typeScale = 'combine'
-    const radios = typeScales.querySelectorAll('input[type=radio]')
-    radios.forEach(r => r.checked ? typeScale = r.value : null)
+  getTypeScale = input.value
 
-    // get baseFont
-    const baseFont = baseFontRange.value
-
-    // getRatio
-    const ratio = button.value
-
-    const scales = document.getElementById('scales')
-    scales.remove()
-    
-    createScales(gridValue, typeScale, baseFont, ratio, 16)
-  }
+  createScales()
 })
 
 baseFontRange.addEventListener('input', () => {
@@ -231,45 +405,23 @@ baseFontRange.addEventListener('input', () => {
   baseFontTooltip.dataset.tip = `${val}px`;
   baseFontTooltip.style.insetInlineStart = `${percent}%`
 
-  // getGrid
-  const gridValue = '8pt'
+  getBaseFont = baseFontRange.value
 
-  // getTypeScale
-  let typeScale = 'combine'
-  const radios = typeScales.querySelectorAll('input[type=radio]')
-  radios.forEach(r => r.checked ? typeScale = r.value : null)
-
-  // get baseFont
-  const baseFont = baseFontRange.value
-
-  // getRatio
-  let ratio = 1.067
-  const buttons = contrastRatio.querySelectorAll('button')
-  buttons.forEach(b => b.classList.contains('btn-active') ? ratio = b.value : null)
-
-  const scales = document.getElementById('scales')
-  scales.remove()
-
-  createScales(gridValue, typeScale, baseFont, ratio, 16)
+  createScales()
 })
 
-document.addEventListener('DOMContentLoaded', () => {
-  const panelHeightPX = window.innerHeight - dock.offsetHeight;
+contrastRatio.addEventListener('click', e => {
+  const oldActiveButton = contrastRatio.querySelector('.btn-active')
+  const newActiveButton = e.target.closest('button')
+  if (!oldActiveButton || !newActiveButton) return;
 
-  const viewportHeightInPX = window.innerHeight;
+  oldActiveButton.classList.remove('btn-active')
+  newActiveButton.classList.add('btn-active')
 
-  const panelHeightVH = (panelHeightPX / viewportHeightInPX) * 100;
-
-  panel.style.height = `${panelHeightVH}vh`
+  getRatio = newActiveButton.value
+  
+  createScales()
 })
-
-function getPanelHeight() {
-  const panelHeightPX = window.innerHeight - dock.offsetHeight;
-
-  const viewportHeightInPX = window.innerHeight;
-
-  return (panelHeightPX / viewportHeightInPX) * 100;
-}
 
 dock.addEventListener('click', e => {
   const button = e.target.closest('button')
@@ -292,3 +444,100 @@ dock.addEventListener('click', e => {
     }
   }
 })
+
+document.addEventListener('DOMContentLoaded', () => {
+  const panelHeightPX = window.innerHeight - dock.offsetHeight;
+
+  const viewportHeightInPX = window.innerHeight;
+
+  const panelHeightVH = (panelHeightPX / viewportHeightInPX) * 100;
+
+  panel.style.height = `${panelHeightVH}vh`
+})
+
+function getPanelHeight() {
+  const panelHeightPX = window.innerHeight - dock.offsetHeight;
+
+  const viewportHeightInPX = window.innerHeight;
+
+  return (panelHeightPX / viewportHeightInPX) * 100;
+}
+
+const preferColorScheme = window.matchMedia('(prefers-color-scheme: dark)');
+let prefersDark = preferColorScheme.matches
+
+if (prefersDark) { // initial state
+  switchText.textContent = 'Dark'
+} else {
+  switchText.textContent = 'Light'
+  switchMode.querySelector('input[type=checkbox]').setAttribute('checked', 'checked')
+}
+
+preferColorScheme.addEventListener('change', (e) => { // system change
+  if (e.matches) {
+    switchText.textContent = 'Dark'
+    switchMode.querySelector('input[type=checkbox]').removeAttribute('checked')
+    prefersDark = true
+  } else {
+    switchText.textContent = 'Light'
+    switchMode.querySelector('input[type=checkbox]').setAttribute('checked', 'checked')
+    prefersDark = false
+  }
+
+  document.documentElement.removeAttribute('data-theme')
+})
+
+switchMode.addEventListener('click', e => {
+  const input = e.target.closest('input[type=checkbox]')
+  const root = document.documentElement
+  let hasDatatheme = document.querySelector(':root').hasAttribute('data-theme')
+
+  if (input) {
+    if (prefersDark) {
+      if (!hasDatatheme) {
+        root.setAttribute('data-theme', 'light') // 1st toggle
+        switchText.textContent = 'Light'
+      } else {
+        // 2nd or more toggle
+        if (root.getAttribute('data-theme') === 'light') {
+          root.setAttribute('data-theme', 'dark')
+          switchText.textContent = 'Dark'
+        } else {
+          root.setAttribute('data-theme', 'light')
+          switchText.textContent = 'Light'
+        }
+      }
+    } else {
+      if (!hasDatatheme) {
+        root.setAttribute('data-theme', 'dark') // 1st toggle
+        switchText.textContent = 'Dark'
+      } else {
+        // 2nd or more toggle
+        if (root.getAttribute('data-theme') === 'light') {
+          root.setAttribute('data-theme', 'dark')
+        switchText.textContent = 'Dark'
+        } else {
+          root.setAttribute('data-theme', 'light')
+          switchText.textContent = 'Light'
+        }
+      }
+    }
+  }
+})
+
+const mediaQuery = window.matchMedia('(min-width: 640px)');
+
+function handleMediaQueryChange(e) {
+  if (e.matches) {
+    panel.removeAttribute('style')
+    calculator.classList.remove('hidden')
+    nav.classList.remove('hidden')
+    calculator.classList.add('h-screen')
+    preview.style.overflow = 'auto'
+  } else {
+    panel.style.height = `${getPanelHeight()}vh`
+  }
+}
+
+handleMediaQueryChange(mediaQuery);
+mediaQuery.addEventListener('change', handleMediaQueryChange);
